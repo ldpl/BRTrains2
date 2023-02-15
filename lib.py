@@ -164,14 +164,27 @@ class Unit:
         self.length = length
         self.electric = electric
 
-    def make_props(self):
-        effect = Train.VisualEffect.ELECTRIC if self.electric else Train.VisualEffect.DIESEL
+    def make_props(self, g):
+        if self.electric:
+            electric_effect = Train.visual_effect_and_powered(Train.VisualEffect.ELECTRIC, position=2, wagon_power=False)
+            default_effect = Train.VisualEffect.DISABLE
+        else:
+            electric_effect = Train.VisualEffect.DISABLE
+            default_effect = Train.visual_effect_and_powered(Train.VisualEffect.DIESEL, position=2, wagon_power=False)
         return dict(
             sprites=self.sprites,
             length=self.length,
-            visual_effect_and_powered=Train.visual_effect_and_powered(effect, position=2, wagon_power=False),
+            callbacks={
+                'visual_effect_and_powered': grf.Switch(
+                    'current_railtype',
+                    {
+                        rt: electric_effect
+                        for rt in g.elecrified_railtypes
+                    },
+                    default_effect,
+                )
+            }
         )
-
 
 class MUTrain(Train):
     def __init__(self, *, id, units, total_capacity, purchase_sprites=None, electric_power=None, diesel_power=None, **kw):
@@ -199,7 +212,7 @@ class MUTrain(Train):
         head = units[0]
         super().__init__(
             id=id,
-            **head.make_props(),
+            **head.make_props(self.bound_newgrf),
             power=power,
             **common_props,
             cargo_capacity=capacity[0],
@@ -207,7 +220,7 @@ class MUTrain(Train):
         )
         for i, u in enumerate(units[1:]):
             self.add_articulated_part(
-                **u.make_props(),
+                **u.make_props(self.bound_newgrf),
                 **common_props,
                 cargo_capacity=capacity[i + 1],
             )
@@ -233,8 +246,6 @@ class MUTrain(Train):
                 },
                 default=g.strings['CANNOT_ATTACH'].get_global_id()
             )
-
-        # TODO switch visual effect by railtype
 
     # TODO find a better way of defining purchase sprites (possibly group by class)
     def get_sprites(self, g):
