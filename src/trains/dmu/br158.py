@@ -2,19 +2,12 @@ from datetime import date
 
 import grf
 
-from ..common import g, railtypes, train_props, templates
-from ..lib import Unit, Train, MUTrain
+from ...common import g, railtypes, templates
+from ...lib import Unit, Train, DMUTrain, make_liveries
 
 
 br158a_png = grf.ImageFile('gfx/BR158a.png')
 br158_purchase = templates.apply('purchase', 0, 0, lambda *args, **kw: grf.FileSprite(br158a_png, *args, **kw, bpp=8))
-
-def make_liveries(liveries, png):
-    func = lambda *args, **kw: grf.FileSprite(png, *args, **kw, bpp=8)
-    res = {}
-    for name, slot in liveries.items():
-        res[name] = templates.apply('train32px', 0, 13 + 25 * slot, func)
-    return res
 
 # TODO livery order
 
@@ -50,16 +43,16 @@ br158ab_liveries = {
 }
 
 br158a = Unit(
-    liveries=make_liveries(br158ab_liveries, br158a_png),
+    liveries=make_liveries(br158a_png, br158ab_liveries, yofs=13),
     length=8,
-    electric=False,
+    power_type=Unit.DIESEL,
     colour_mapping=grf.Palette.CC_FIRST,
 )
 
 br158b = Unit(
-    liveries=make_liveries(br158ab_liveries, grf.ImageFile('gfx/BR158b.png')),
+    liveries=make_liveries(grf.ImageFile('gfx/BR158b.png'), br158ab_liveries, yofs=13),
     length=8,
-    electric=False,
+    power_type=Unit.DIESEL,
     colour_mapping=grf.Palette.CC_FIRST,
 )
 
@@ -81,14 +74,13 @@ br158c_png = grf.ImageFile('gfx/BR158c.png')
 br158_3_purchase = templates.apply('purchase', 0, 0, lambda *args, **kw: grf.FileSprite(br158c_png, *args, **kw, bpp=8))
 
 br158c = Unit(
-    liveries=make_liveries(br158c_liveries, br158c_png),
+    liveries=make_liveries(br158c_png, br158c_liveries, yofs=13),
     length=8,
-    electric=False,
+    power_type=Unit.DIESEL,
     colour_mapping=grf.Palette.CC_FIRST,
 )
 
 br158_common_props = dict(
-    **train_props,
     introduction_date=date(1989, 4, 21),
     model_life=8,
     retire_early=1,
@@ -108,7 +100,7 @@ br158_common_props = dict(
     air_drag_coefficient=grf.nml_drag(0.1),
 )
 
-br158 = MUTrain(
+br158 = DMUTrain(
     **br158_common_props,
     id=36,
     name=g.strings['NAME_BR158'],
@@ -118,12 +110,14 @@ br158 = MUTrain(
     weight=Train.ton(76),
 
     total_capacity=69 * 2,
-    diesel_power=Train.hp(700),
+    power=Train.hp(700),
     purchase_sprites=br158_purchase,
     # TODO additional_text=g.strings['DSC_BR_755'],
+    # TODO create_effect:                      diesel_create_visual_effect;
+    # TODO sound_effect:                       sw_dmu_sound;
 )
 
-br158_3 = MUTrain(
+br158_3 = DMUTrain(
     **br158_common_props,
     id=39,
     name=g.strings['NAME_BR158_3'],
@@ -133,7 +127,9 @@ br158_3 = MUTrain(
     weight=Train.ton(113),
 
     total_capacity=69 * 3,
-    diesel_power=Train.hp(1050),
+    power=Train.hp(1050),
     purchase_sprites=br158_3_purchase,
     # TODO additional_text=g.strings['DSC_BR_755'],
+    # TODO create_effect:                      diesel_create_visual_effect;
+    # TODO sound_effect:                       sw_dmu_sound;
 )

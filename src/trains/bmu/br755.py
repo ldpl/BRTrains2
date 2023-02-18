@@ -2,8 +2,8 @@ from datetime import date
 
 import grf
 
-from ..common import g, railtypes, train_props, templates
-from ..lib import Unit, Train, MUTrain
+from ...common import g, railtypes, templates
+from ...lib import Unit, Train, BMUTrain
 
 
 br755_png = grf.ImageFile('gfx/BR755.png')
@@ -11,33 +11,32 @@ br755_sprite = lambda *args, **kw: grf.FileSprite(br755_png, *args, **kw, bpp=8)
 br755a = Unit(
     sprites=templates.apply('train28px', 0, 0, br755_sprite),
     length=7,
-    electric=True,
+    power_type=Unit.ELECTRIC,
 )
 br755b = Unit(
     sprites=templates.apply('train28px', 0, 23, br755_sprite),
     length=7,
-    electric=True,
+    power_type=Unit.ELECTRIC,
 )
 br755c = Unit(
     sprites=templates.apply('train24px', 0, 46, br755_sprite),
     length=6,
-    electric=True,
+    power_type=Unit.ELECTRIC,
 )
 br755d = Unit(
     sprites=templates.apply('train24px', 0, 67, br755_sprite),
     length=6,
-    electric=True,
+    power_type=Unit.ELECTRIC,
 )
 br755pp = Unit(
     sprites=templates.apply('train20px', 0, 88, br755_sprite),
     length=5,
-    electric=False,
+    power_type=Unit.DIESEL,
 )
 br755_purchase = templates.apply('purchase', 160, 0, br755_sprite)
 
 
 br755_common_props = dict(
-    **train_props,
     introduction_date=date(2019, 7, 29),
     model_life=grf.VEHICLE_NEVER_EXPIRES,
     vehicle_life=30,
@@ -47,10 +46,7 @@ br755_common_props = dict(
     cargo_allow_refit=b'',
 
     max_speed=Train.mph(100),
-    track_type=railtypes['RAIL'],
     ai_special_flag=Train.AIFlags.PASSENGER,
-    running_cost_base=Train.RunningCost.ELECTRIC,
-    engine_class=Train.EngineClass.DIESEL,
     tractive_effort_coefficient=grf.nml_te(0.3),
     air_drag_coefficient=grf.nml_drag(0.06),
 
@@ -58,7 +54,7 @@ br755_common_props = dict(
 )
 
 # Class 755/3 (3.5car)
-br755_3 = MUTrain(
+br755_3 = BMUTrain(
     **br755_common_props,
     id=453,
     name=g.strings['BR_755_3CAR'],
@@ -74,7 +70,7 @@ br755_3 = MUTrain(
 )
 
 # Class 755/4 (4.5car)
-br755_4 = MUTrain(
+br755_4 = BMUTrain(
     **br755_common_props,
     id=454,
     name=g.strings['BR_755_4CAR'],

@@ -152,6 +152,7 @@ railtypes = {
     'BR_3RDC': g.add_railtype('SAAZ', 'SAA3', '3RDC', '3RDR', 'ELRL'),  # 3rd Rail or Catenary
     'BR_4RDR': g.add_railtype('SAA4', 'SAA3', 'ELRL'),  # 3rd or 4th rail
 }
+rt_elrl = railtypes['ELRL']
 elecrified_railtypes = (railtypes['ELRL'], railtypes['BR_3RDC'])
 
 g.set_cargo_table([
@@ -176,8 +177,7 @@ train_props = dict(
     climates_available=grf.ALL_CLIMATES,
     cargo_age_period=185,
     bitmask_vehicle_info=0,
-    extra_weight_per_wagon_low=0,
-    extra_weight_per_wagon_high=0,
+    extra_weight_per_wagon=0,
     extra_power_per_wagon=0,
     dual_headed=0, # TODO only BRMPV is
     non_refittable_cargo_classes=0,

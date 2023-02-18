@@ -2,7 +2,21 @@ import json
 
 import grf
 
-from .common import elecrified_railtypes
+from .common import elecrified_railtypes, templates, railtypes, train_props
+
+
+ELECTRIC_EFFECT = grf.Train.visual_effect_and_powered(grf.Train.VisualEffect.ELECTRIC, position=2, wagon_power=False)
+DIESEL_EFFECT = grf.Train.visual_effect_and_powered(grf.Train.VisualEffect.DIESEL, position=2, wagon_power=False)
+
+
+def make_liveries(png, liveries, *, xofs=0, yofs=0):
+    if isinstance(png, str):
+        png = grf.ImageFile(png)
+    func = lambda *args, **kw: grf.FileSprite(png, *args, **kw, bpp=8)
+    res = {}
+    for name, slot in liveries.items():
+        res[name] = templates.apply('train32px', xofs, yofs + 25 * slot, func)
+    return res
 
 
 class Train(grf.Train):
@@ -12,6 +26,7 @@ class Train(grf.Train):
     def __init__(self, *args, length, **kw):
         super().__init__(
             *args,
+            **train_props,
             shorten_by=8-length,
             **kw,
         )
@@ -20,28 +35,32 @@ class Train(grf.Train):
         super().add_articulated_part(
             **kw,
             shorten_by=8-length,
-            id=self.__class__.next_articulated_id
+            id=Train.next_articulated_id
         )
-        self.__class__.next_articulated_id += 1
+        Train.next_articulated_id += 1
 
 
 class Unit:
-    def __init__(self, *, length, electric, sprites=None, liveries=None, colour_mapping=None):
+    ELECTRIC, DIESEL = 1, 2
+
+    def __init__(self, *, length, power_type=0, sprites=None, liveries=None, colour_mapping=None):
         if liveries is None:
             assert sprites is not None
             liveries = {None: sprites}
         self.liveries = liveries
         self.length = length
-        self.electric = electric
+        self.power_type = power_type
         self.colour_mapping = colour_mapping
 
     def make_props(self, use_liveries):
-        if self.electric:
-            electric_effect = Train.visual_effect_and_powered(Train.VisualEffect.ELECTRIC, position=2, wagon_power=False)
-            default_effect = Train.VisualEffect.DISABLE
+        if self.power_type & self.ELECTRIC > 0:
+            electric_effect = ELECTRIC_EFFECT
         else:
             electric_effect = Train.VisualEffect.DISABLE
-            default_effect = Train.visual_effect_and_powered(Train.VisualEffect.DIESEL, position=2, wagon_power=False)
+        if self.power_type & self.DIESEL > 0:
+            default_effect = DIESEL_EFFECT
+        else:
+            default_effect = Train.VisualEffect.DISABLE
         liveries = [
             {
                 'name': name,
@@ -71,60 +90,78 @@ class Unit:
 
 
 class MUTrain(Train):
-    def __init__(self, *, id, units, total_capacity, purchase_sprites=None, electric_power=None, diesel_power=None, **kw):
+    def __init__(self, *, id, units, total_capacity, design_speed=None, use_liveries=None, purchase_sprites=None, **kw):
         # TODO GetAdjustedCost for cost_factor and runnig_cost_factor
         # TODO multiply capacity by param_pax
         assert units
-        self.electric_power = electric_power
-        self.diesel_power = diesel_power
+
         self.units = units
         self.can_attach = None
         self.purchase_sprites = purchase_sprites
+        self.design_speed = design_speed
+        self._capacity_switch_cache = {}
 
-        power = electric_power
-        if power is None or (diesel_power is not None and diesel_power > power):
-            power = diesel_power
+        def calc_capacity(total_capacity):
+            # Split total capacity between units, as equially as possible
+            assert total_capacity <= 255 * len(self.units), total_capacity
+            capacity = [total_capacity // len(self.units)] * len(self.units)
+            for i in range(total_capacity - sum(capacity)):
+                capacity[i] += 1
+            return capacity
+
+        # Find common liveries
+        self.common_liveries = set.intersection(*(set(u.liveries.keys()) for u in units))
+        if use_liveries:
+            assert all(l in self.common_liveries for l in use_liveries)
+            self.common_liveries = set(use_liveries)
+
+        if isinstance(total_capacity, int):
+            self.capacity = {None: calc_capacity(total_capacity)}
+        else:
+            assert len(total_capacity) > 1
+            self.capacity = {k: calc_capacity(v) for k, v in total_capacity.items()}
+            assert len(self.common_liveries) == len(self.capacity), (self.common_liveries, self.capacity.keys())
+        default_capacity = next(iter(self.capacity.values()))
 
         common_props = {
             'misc_flags': Train.Flags.MULTIPLE_UNIT,
         }
-
-        # Split total capacity between units, as equially as possible
-        assert total_capacity <= 255 * len(self.units), total_capacity
-        capacity = [total_capacity // len(self.units)] * len(self.units)
-        for i in range(total_capacity - sum(capacity)):
-            capacity[i] += 1
-
-        # Find common liveries
-        self.common_liveries = set.intersection(*(set(u.liveries.keys()) for u in units))
-
         head = units[0]
         super().__init__(
             id=id,
             **head.make_props(self.common_liveries),
-            power=power,
             **common_props,
-            cargo_capacity=capacity[0],
+            cargo_capacity=default_capacity[0],
             **kw,
         )
         for i, u in enumerate(units[1:]):
             self.add_articulated_part(
                 **u.make_props(self.common_liveries),
                 **common_props,
-                cargo_capacity=capacity[i + 1],
+                cargo_capacity=default_capacity[i + 1],
             )
+
+    def _make_capacity_switch(self, position):
+        if position in self._capacity_switch_cache:
+            return self._capacity_switch_cache[position]
+        liveries = self.units[position].liveries
+        res = self._capacity_switch_cache[position] = grf.Switch(
+            'cargo_subtype',
+            ranges={
+                i: self.capacity[l][position]
+                for i, l in enumerate(liveries.keys())
+                if l in self.common_liveries
+            },
+            default=0,  # TODO no default(fail)
+        )
+        return res
+
+    def _set_articulated_part_callbacks(self, g, position, callbacks):
+        if len(self.capacity) > 1:
+            callbacks.properties.cargo_capacity = self._make_capacity_switch(position)
 
     def _set_callbacks(self, g):
         super()._set_callbacks(g)
-        if self.electric_power is not None and self.diesel_power is not None:
-            self.callbacks.properties.power = grf.Switch(
-                'current_railtype',
-                {
-                    rt: self.electric_power
-                    for rt in elecrified_railtypes
-                },
-                default=self.diesel_power
-            )
 
         if self.can_attach is not None:
             self.callbacks.can_attach_wagon = grf.Switch(
@@ -135,6 +172,11 @@ class MUTrain(Train):
                 },
                 default=g.strings['CANNOT_ATTACH'].get_global_id()
             )
+
+        if len(self.capacity) > 1:
+            self.callbacks.properties.cargo_capacity = self._make_capacity_switch(0)
+
+        # TODO switch between service and design speed based on parameter
 
     # TODO find a better way of defining purchase sprites (possibly group by class)
     def get_sprites(self, g):
@@ -157,3 +199,48 @@ class MUTrain(Train):
         res.extend(super().get_sprites(g))
         return res
 
+
+
+class EMUTrain(MUTrain):
+    def __init__(self, **kw):
+        super().__init__(
+            track_type=railtypes['ELRL'],
+            running_cost_base=Train.RunningCost.ELECTRIC,
+            engine_class=Train.EngineClass.ELECTRIC,
+            visual_effect_and_powered=ELECTRIC_EFFECT,
+            **kw
+        )
+
+
+DMUTrain = MUTrain
+
+
+class BMUTrain(MUTrain):
+    def __init__(self, *, electric_power=None, diesel_power=None, **kw):
+        self.electric_power = electric_power
+        self.diesel_power = diesel_power
+
+        power = electric_power
+        if power is None or (diesel_power is not None and diesel_power > power):
+            power = diesel_power
+
+        super().__init__(
+            power=power,
+            track_type=railtypes['RAIL'],
+            running_cost_base=Train.RunningCost.ELECTRIC,
+            engine_class=Train.EngineClass.DIESEL,  # even if its 3rd rail, ELECTRIC would give overhead wire effects
+            visual_effect_and_powered=ELECTRIC_EFFECT,
+            **kw,
+        )
+
+    def _set_callbacks(self, g):
+        super()._set_callbacks(g)
+        if self.electric_power is not None and self.diesel_power is not None:
+            self.callbacks.properties.power = grf.Switch(
+                'current_railtype',
+                {
+                    rt: self.electric_power
+                    for rt in elecrified_railtypes
+                },
+                default=self.diesel_power
+            )

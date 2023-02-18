@@ -26,7 +26,7 @@ with open(file) as f:
 	for set_id, file, template, x, y in m:
 		if set_id.endswith('Purchase'):
 			continue
-		set_id = set_id[len('spriteset_BR158a_'):]
+		# set_id = set_id[len('spriteset_BR158a_'):]
 		# res[file][set_id] = (template, int(x), int(y))
 		res[file][set_id] = (template, int(x), int(y))
 
