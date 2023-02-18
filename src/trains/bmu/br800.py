@@ -11,31 +11,32 @@ liveries = {
     'LNER': 0,
     'GWR': 3,
     'Lumo': 6,
-    'EMR': 9,
+    # 'EMR': 9, TODO unused?
     'TPE': 12,
     'HullTrains': 15,
     'VTEC': 18,
 }
 
+livery_name_func = lambda name: g.strings['LIVERY_BR800_' + name]
 br80x_front = Unit(
-    liveries=make_liveries(png, liveries),
+    liveries=make_liveries(png, livery_name_func, liveries),
     length=8,
     power_type=Unit.ELECTRIC | Unit.DIESEL,
 )
 
-liveries_middle = make_liveries(png, {k: v + 1 for k, v in liveries.items()})
+liveries_middle = make_liveries(png, livery_name_func, {k: v + 1 for k, v in liveries.items()})
 br80x_middle = Unit(
     liveries=liveries_middle,
     length=8,
 )
 br80x_middle_special = Unit(
     # replace HullTrains livery with a special variant
-    liveries={**liveries_middle, **make_liveries(png, {'HullTrains': 16}, xofs=172)},
+    liveries={**liveries_middle, **make_liveries(png, livery_name_func, {'HullTrains': 16}, xofs=172)},
     length=8,
 )
 
 br80x_rear = Unit(
-    liveries=make_liveries(png, {k: v + 2 for k, v in liveries.items()}),
+    liveries=make_liveries(png, livery_name_func, {k: v + 2 for k, v in liveries.items()}),
     length=8,
     power_type=Unit.ELECTRIC | Unit.DIESEL,
 )

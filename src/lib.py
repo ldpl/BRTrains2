@@ -9,13 +9,16 @@ ELECTRIC_EFFECT = grf.Train.visual_effect_and_powered(grf.Train.VisualEffect.ELE
 DIESEL_EFFECT = grf.Train.visual_effect_and_powered(grf.Train.VisualEffect.DIESEL, position=2, wagon_power=False)
 
 
-def make_liveries(png, liveries, *, xofs=0, yofs=0):
+def make_liveries(png, name_func, liveries, *, xofs=0, yofs=0):
     if isinstance(png, str):
         png = grf.ImageFile(png)
     func = lambda *args, **kw: grf.FileSprite(png, *args, **kw, bpp=8)
     res = {}
     for name, slot in liveries.items():
-        res[name] = templates.apply('train32px', xofs, yofs + 25 * slot, func)
+        res[name] = {
+            'name': name_func(name),
+            'sprites': templates.apply('train32px', xofs, yofs + 25 * slot, func),
+        }
     return res
 
 
@@ -46,7 +49,7 @@ class Unit:
     def __init__(self, *, length, power_type=0, sprites=None, liveries=None, colour_mapping=None):
         if liveries is None:
             assert sprites is not None
-            liveries = {None: sprites}
+            liveries = {None: {'name': None, 'sprites': sprites}}
         self.liveries = liveries
         self.length = length
         self.power_type = power_type
@@ -61,13 +64,7 @@ class Unit:
             default_effect = DIESEL_EFFECT
         else:
             default_effect = Train.VisualEffect.DISABLE
-        liveries = [
-            {
-                'name': name,
-                'sprites': sprites,
-            }
-            for name, sprites in self.liveries.items() if name in use_liveries
-        ]
+        liveries = [data for name, data in self.liveries.items() if name in use_liveries]
         callbacks = {
             'visual_effect_and_powered': grf.Switch(
                 'current_railtype',

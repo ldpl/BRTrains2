@@ -41,16 +41,17 @@ br158ab_liveries = {
     'TfW': 25,
     'NorthernToY': 26,
 }
+livery_name_func = lambda name: g.strings[name]
 
 br158a = Unit(
-    liveries=make_liveries(br158a_png, br158ab_liveries, yofs=13),
+    liveries=make_liveries(br158a_png, livery_name_func, br158ab_liveries, yofs=13),
     length=8,
     power_type=Unit.DIESEL,
     colour_mapping=grf.Palette.CC_FIRST,
 )
 
 br158b = Unit(
-    liveries=make_liveries(grf.ImageFile('gfx/BR158b.png'), br158ab_liveries, yofs=13),
+    liveries=make_liveries(grf.ImageFile('gfx/BR158b.png'), livery_name_func, br158ab_liveries, yofs=13),
     length=8,
     power_type=Unit.DIESEL,
     colour_mapping=grf.Palette.CC_FIRST,
@@ -74,7 +75,7 @@ br158c_png = grf.ImageFile('gfx/BR158c.png')
 br158_3_purchase = templates.apply('purchase', 0, 0, lambda *args, **kw: grf.FileSprite(br158c_png, *args, **kw, bpp=8))
 
 br158c = Unit(
-    liveries=make_liveries(br158c_png, br158c_liveries, yofs=13),
+    liveries=make_liveries(br158c_png, livery_name_func, br158c_liveries, yofs=13),
     length=8,
     power_type=Unit.DIESEL,
     colour_mapping=grf.Palette.CC_FIRST,
