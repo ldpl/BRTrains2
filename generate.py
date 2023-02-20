@@ -332,13 +332,11 @@ purchase_order = [
  # item_BRMk3Sleeper,
 ]
 
-# TODO fix sorting
-prev = None
-for v  in purchase_order:
-    if prev is not None:
-        prev._props['sort_purchase_list'] = v.id
-    prev = v
+# Check that all trains have unique ids
+assert len(set(x.id for x in purchase_order)) == len(purchase_order)
 
 g.add(*purchase_order)
+
+g.add(grf.SetPurchaseOrder(*purchase_order))
 
 g.write('brtrains2.grf')

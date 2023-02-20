@@ -113,6 +113,7 @@ br158 = DMUTrain(
     total_capacity=69 * 2,
     power=Train.hp(700),
     purchase_sprites=br158_purchase,
+    # TODO wtf cargo_age_period:               215;
     # TODO additional_text=g.strings['DSC_BR_755'],
     # TODO create_effect:                      diesel_create_visual_effect;
     # TODO sound_effect:                       sw_dmu_sound;

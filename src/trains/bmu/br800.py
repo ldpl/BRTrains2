@@ -11,7 +11,7 @@ liveries = {
     'LNER': 0,
     'GWR': 3,
     'Lumo': 6,
-    # 'EMR': 9, TODO unused?
+    # 'EMR': 9, TODO unused? there is AVANTI in lang file instead
     'TPE': 12,
     'HullTrains': 15,
     'VTEC': 18,

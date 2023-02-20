@@ -48,7 +48,7 @@ br802_5 = BMUTrain(
 # Class 800/1/3 (9car)
 br802_9 = BMUTrain(
     **br802_common_props,
-    id=460,
+    id=462,
     name=g.strings['BR802_9CAR'],
     units=[br80x_front, br80x_middle, br80x_middle, br80x_middle, br80x_middle, br80x_middle, br80x_middle, br80x_middle, br80x_rear],
     use_liveries=('GWR',),

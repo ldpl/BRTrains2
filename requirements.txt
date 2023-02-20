@@ -1,1 +1,1 @@
-git+https://github.com/citymania-org/grf-py.git@0b486aef3dd2444c74377b32de5d743bd9c8855a#egg=grf
+git+https://github.com/citymania-org/grf-py.git@693ba91e3cfa0ffa1ec8b41331fe5bbdf6047089#egg=grf
